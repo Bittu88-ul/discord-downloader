@@ -1,0 +1,4 @@
+discord.py>=2.3.0
+yt-dlp>=2023.10.13
+aiofiles>=23.2.1
+asyncio>=3.4.3
