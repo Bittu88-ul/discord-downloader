@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Discord Video Downloader Bot
-Main entry point for the bot application
+Main entry point for the bot application - RENDER DEPLOYMENT READY
 """
 
 import discord
@@ -13,7 +13,10 @@ import json
 import sys
 from pathlib import Path
 
+# Create necessary directories
 os.makedirs("logs", exist_ok=True)
+os.makedirs("downloads", exist_ok=True)
+os.makedirs("temp", exist_ok=True)
 
 # Import utility modules
 from utils.cleanup import CleanupManager
@@ -30,9 +33,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ============================================
+# LOAD CONFIGURATION - RENDER COMPATIBLE
+# ============================================
+def load_config():
+    """Load config from environment variable or config.json"""
+    config = {}
+    
+    # Try to get token from environment variable (Render.com)
+    token = os.getenv('DISCORD_TOKEN')
+    
+    if token:
+        logger.info("✅ Token loaded from environment variable")
+        config['BOT_TOKEN'] = token
+    else:
+        # Fallback to config.json (local development)
+        try:
+            with open('config.json', 'r') as f:
+                config = json.load(f)
+            logger.info("✅ Token loaded from config.json")
+        except FileNotFoundError:
+            logger.error("❌ No DISCORD_TOKEN found in environment variables or config.json")
+            logger.error("Please set DISCORD_TOKEN in Render environment variables")
+            sys.exit(1)
+        except json.JSONDecodeError:
+            logger.error("❌ config.json is malformed")
+            sys.exit(1)
+    
+    return config
+
 # Load configuration
-with open('config.json', 'r') as f:
-    config = json.load(f)
+config = load_config()
 
 class VideoDownloaderBot(commands.Bot):
     """Main bot class for video downloader"""
@@ -50,14 +81,15 @@ class VideoDownloaderBot(commands.Bot):
         )
         
         self.config = config
-        self.cleanup_manager = CleanupManager(config)
+        self.cleanup_manager = CleanupManager(config) if 'cleanup' in config else None
         
     async def setup_hook(self):
         """Called when bot is setting up - sync commands and start cleanup"""
         logger.info("Starting setup hook...")
         
-        # Start background cleanup task
-        self.loop.create_task(self.cleanup_manager.start_cleanup_scheduler())
+        # Start background cleanup task if cleanup manager exists
+        if self.cleanup_manager:
+            self.loop.create_task(self.cleanup_manager.start_cleanup_scheduler())
         
         # Sync slash commands
         await self.sync_commands()
@@ -74,8 +106,8 @@ class VideoDownloaderBot(commands.Bot):
     
     async def on_ready(self):
         """Called when bot is ready"""
-        logger.info(f"Logged in as {self.user.name} (ID: {self.user.id})")
-        logger.info(f"Bot is in {len(self.guilds)} guild(s)")
+        logger.info(f"✅ Logged in as {self.user.name} (ID: {self.user.id})")
+        logger.info(f"📊 Bot is in {len(self.guilds)} guild(s)")
         
         # Set status
         await self.change_presence(
@@ -86,12 +118,7 @@ class VideoDownloaderBot(commands.Bot):
             status=discord.Status.online
         )
         
-        # Create necessary directories
-        Path("downloads").mkdir(exist_ok=True)
-        Path("temp").mkdir(exist_ok=True)
-        Path("logs").mkdir(exist_ok=True)
-        
-        logger.info("Bot is ready!")
+        logger.info("🎉 Bot is ready to download videos!")
     
     async def on_command_error(self, ctx, error):
         """Handle command errors"""
@@ -123,17 +150,18 @@ def main():
     """Main entry point"""
     try:
         # Validate token
-        if config['BOT_TOKEN'] == 'YOUR_BOT_TOKEN_HERE':
-            logger.error("Please set your bot token in config.json")
+        if not config.get('BOT_TOKEN') or config['BOT_TOKEN'] == 'YOUR_BOT_TOKEN_HERE':
+            logger.error("❌ Please set your bot token in config.json or DISCORD_TOKEN environment variable")
             sys.exit(1)
         
         # Run bot
+        logger.info("🚀 Starting bot...")
         bot.run(config['BOT_TOKEN'])
     except discord.LoginFailure:
-        logger.error("Invalid bot token provided")
+        logger.error("❌ Invalid bot token provided")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"Failed to start bot: {e}")
+        logger.error(f"❌ Failed to start bot: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
