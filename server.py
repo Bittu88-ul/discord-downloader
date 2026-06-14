@@ -1,11 +1,12 @@
 """
-HTTP Server with URL encoding support - Complete Version
+HTTP Server with URL encoding support - Render.com Ready Version
 """
 
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
 import urllib.parse
 from datetime import datetime
+import sys
 
 class DownloadHandler(SimpleHTTPRequestHandler):
     """Handle file downloads with URL encoding"""
@@ -158,9 +159,9 @@ class DownloadHandler(SimpleHTTPRequestHandler):
                 files = [f for f in os.listdir('downloads') if f.endswith(('.mp4', '.webm', '.mkv', '.mp3'))]
                 if files:
                     # Sort by modification time (newest first)
-                    files.sort(key=lambda x: os.path.getmtime(f'downloads/{x}'), reverse=True)
+                    files.sort(key=lambda x: os.path.getmtime(os.path.join('downloads', x)), reverse=True)
                     for f in files:
-                        file_size = os.path.getsize(f'downloads/{f}') / (1024 * 1024)
+                        file_size = os.path.getsize(os.path.join('downloads', f)) / (1024 * 1024)
                         encoded_f = urllib.parse.quote(f)
                         html += f'''
                         <div class="file-item">
@@ -250,11 +251,11 @@ def run_server(port=8080):
     # Create downloads directory if it doesn't exist
     os.makedirs('downloads', exist_ok=True)
     
-    server = HTTPServer(('', port), DownloadHandler)
+    server = HTTPServer(('0.0.0.0', port), DownloadHandler)
     print(f"\n{'='*50}")
     print(f"✅ DOWNLOAD SERVER RUNNING")
     print(f"{'='*50}")
-    print(f"📍 Local URL: http://localhost:{port}")
+    print(f"📍 Public URL: http://0.0.0.0:{port}")
     print(f"📁 Download folder: downloads/")
     print(f"🛑 Press Ctrl+C to stop")
     print(f"{'='*50}\n")
@@ -265,7 +266,7 @@ def run_server(port=8080):
         if files:
             print(f"📁 Existing files ({len(files)}):")
             for f in files:
-                size = os.path.getsize(f'downloads/{f}') / (1024 * 1024)
+                size = os.path.getsize(os.path.join('downloads', f)) / (1024 * 1024)
                 print(f"   🎬 {f} ({size:.2f} MB)")
         else:
             print("📁 No files yet. Download something from Discord!")
