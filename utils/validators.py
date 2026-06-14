@@ -5,13 +5,23 @@ Checks if URLs are valid and from supported platforms
 
 import re
 from urllib.parse import urlparse
-import json
+import os
 
-# Load config
-with open('config.json', 'r') as f:
-    config = json.load(f)
-
-SUPPORTED_DOMAINS = config.get('ALLOWED_DOMAINS', [])
+# Supported domains - directly defined (no config.json needed)
+SUPPORTED_DOMAINS = [
+    'youtube.com', 'youtu.be',
+    'twitter.com', 'x.com',
+    'instagram.com',
+    'facebook.com', 'fb.watch',
+    'tiktok.com',
+    'reddit.com',
+    'twitch.tv',
+    'vimeo.com',
+    'dailymotion.com',
+    'bilibili.com',
+    'spotify.com',
+    'soundcloud.com'
+]
 
 def validate_url(url: str) -> tuple:
     """
@@ -56,7 +66,7 @@ def validate_url(url: str) -> tuple:
                 break
         
         if not is_supported:
-            supported_list = ", ".join(SUPPORTED_DOMAINS)
+            supported_list = ", ".join(SUPPORTED_DOMAINS[:10])
             return False, f"Unsupported website. Supported platforms: {supported_list}"
         
         return True, "URL is valid"
